@@ -1,0 +1,113 @@
+pipeline {
+    agent {
+        kubernetes {
+            defaultContainer 'kubectl'
+            yaml """
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: kubectl
+    image: ghcr.io/cessda/jenkins-agent:1.0
+    command: [cat]
+    tty: true
+"""
+        }
+    }
+
+    options {
+        timestamps()
+        disableConcurrentBuilds()
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Validate: Jenkins') {
+            steps {
+                container('kubectl') {
+                    withKubeConfig(credentialsId: 'cessda-mgmt-kubeconfig') {
+                        sh '''
+                            echo "== Jenkins pod =="
+                            kubectl get pod jenkins-0 -n jenkins -o wide
+                            kubectl get pvc -n jenkins
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Validate: ArgoCD') {
+            steps {
+                container('kubectl') {
+                    withKubeConfig(credentialsId: 'cessda-mgmt-kubeconfig') {
+                        sh '''
+                            echo "== ArgoCD pods =="
+                            kubectl get pods -n argocd
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Validate: Prometheus & Alertmanager') {
+            steps {
+                container('kubectl') {
+                    withKubeConfig(credentialsId: 'cessda-mgmt-kubeconfig') {
+                        sh '''
+                            echo "== Prometheus / Alertmanager pods =="
+                            kubectl get pods -n monitoring
+                            echo "== PVCs =="
+                            kubectl get pvc -n monitoring
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Validate: Gateway & routing') {
+            steps {
+                container('kubectl') {
+                    withKubeConfig(credentialsId: 'cessda-mgmt-kubeconfig') {
+                        sh '''
+                            echo "== Gateway =="
+                            kubectl get gateway cessda-gateway -n cessda-mgmt
+                            echo "== HTTPRoutes =="
+                            kubectl get httproute -A
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Summary') {
+            steps {
+                container('kubectl') {
+                    withKubeConfig(credentialsId: 'cessda-mgmt-kubeconfig') {
+                        sh '''
+                            NOT_READY=$(kubectl get pods -A --field-selector=status.phase!=Running,status.phase!=Succeeded --no-headers 2>/dev/null | grep -E "jenkins|argocd|monitoring" | wc -l)
+                            if [ "$NOT_READY" -gt 0 ]; then
+                                echo "WARNING: some pods are not Running."
+                                kubectl get pods -A --no-headers | grep -E "jenkins|argocd|monitoring" | grep -v Running
+                                exit 1
+                            else
+                                echo "All checked workloads are healthy. Nothing applied — this pipeline is validation-only."
+                            fi
+                        '''
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        failure {
+            echo "One or more existing services are unhealthy — review the stage logs above. No changes were made."
+        }
+    }
+}
