@@ -1,0 +1,24 @@
+# 1. Revert hostNetwork
+kubectl patch configmap cilium-config -n kube-system \
+  --type merge \
+  -p '{"data":{"gateway-api-hostnetwork-enabled":"false"}}'
+
+# 2. Restart Cilium
+kubectl rollout restart deployment/cilium-operator -n kube-system
+kubectl rollout restart daemonset/cilium -n kube-system
+
+# 3. Apply all files in order
+kubectl apply -f cessda-mgmt/gateway.yaml
+kubectl apply -f cessda-mgmt/clusterissuer-letsencrypt.yaml
+kubectl apply -f cessda-mgmt/certificate.yaml
+kubectl apply -f argoCD/httproute.yaml
+kubectl apply -f monitoring/httproute.yaml
+kubectl apply -f jenkins/httproute.yaml
+kubectl apply -f graylog/tcproute.yaml
+
+# 4. Get new NodePorts to send to Safespring
+kubectl get svc -n cessda-mgmt cilium-gateway-cessda-gateway
+
+# 5. Update DNS to point to new VIP
+# 6. Watch challenges resolve automatically
+kubectl get challenges -n cessda-mgmt -w
