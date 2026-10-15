@@ -1,0 +1,156 @@
+pipeline {
+    agent {
+        kubernetes {
+            defaultContainer 'kubectl'
+            yaml """
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: kubectl
+    image: ghcr.io/cessda/jenkins-agent:1.0
+    command: [cat]
+    tty: true
+"""
+        }
+    }
+
+    options {
+        timestamps()
+        disableConcurrentBuilds()
+        buildDiscarder(logRotator(numToKeepStr: '20'))
+    }
+
+    environment {
+        MANIFEST_DIR = 'cessda-mgmt'
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        // ---------- Helm-managed apps (ArgoCD, monitoring) ----------
+        // Jenkins is intentionally NOT included in this pipeline.
+
+        stage('Helm repos') {
+            steps {
+                container('kubectl') {
+                    sh '''
+                        helm repo add argo https://argoproj.github.io/argo-helm
+                        helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+                        helm repo update
+                    '''
+                }
+            }
+        }
+
+        stage('ArgoCD (Helm upgrade --install)') {
+            steps {
+                container('kubectl') {
+                    withKubeConfig(credentialsId: 'cessda-mgmt-kubeconfig') {
+                        sh '''
+                            helm upgrade --install argocd argo/argo-cd \
+                                -n argocd --create-namespace \
+                                -f argoCD/values.yaml \
+                                --wait --timeout 5m
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Monitoring (Helm upgrade --install)') {
+            steps {
+                container('kubectl') {
+                    withKubeConfig(credentialsId: 'cessda-mgmt-kubeconfig') {
+                        sh '''
+                            helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
+                                -n monitoring --create-namespace \
+                                -f monitoring/values.yaml \
+                                --wait --timeout 10m
+                        '''
+                    }
+                }
+            }
+        }
+
+        // ---------- Gateway / TLS / RBAC / HTTPRoutes (Kustomize) ----------
+
+        stage('Validate & Diff (Gateway/TLS/RBAC/Routes)') {
+            steps {
+                container('kubectl') {
+                    withKubeConfig(credentialsId: 'cessda-mgmt-kubeconfig') {
+                        script {
+                            sh "kubectl apply -k ${MANIFEST_DIR} --dry-run=server"
+                            def diffExit = sh(
+                                script: "kubectl diff -k ${MANIFEST_DIR}",
+                                returnStatus: true
+                            )
+                            if (diffExit > 1) {
+                                error "kubectl diff failed with unexpected exit code ${diffExit}"
+                            }
+                            env.HAS_CHANGES = (diffExit == 1) ? "true" : "false"
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Approval') {
+            when {
+                expression { env.HAS_CHANGES == "true" }
+            }
+            steps {
+                input message: "Changes detected above — apply Gateway/TLS/RBAC/Routes to cessda-mgmt?", ok: "Apply"
+            }
+        }
+
+        stage('Apply Gateway/TLS/RBAC/Routes') {
+            when {
+                expression { env.HAS_CHANGES == "true" }
+            }
+            steps {
+                container('kubectl') {
+                    withKubeConfig(credentialsId: 'cessda-mgmt-kubeconfig') {
+                        sh """
+                            kubectl apply -k ${MANIFEST_DIR}
+                            kubectl wait --for=condition=Accepted gateway/cessda-gateway \
+                                -n cessda-mgmt --timeout=60s || true
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Verify') {
+            steps {
+                container('kubectl') {
+                    withKubeConfig(credentialsId: 'cessda-mgmt-kubeconfig') {
+                        sh '''
+                            echo "== ArgoCD ==" && kubectl get pods -n argocd
+                            echo "== Monitoring ==" && kubectl get pods -n monitoring
+                            echo "== Gateway ==" && kubectl get gateway cessda-gateway -n cessda-mgmt
+                            echo "== Certificate ==" && kubectl get certificate cessda-tls -n cessda-mgmt
+                            echo "== HTTPRoutes ==" && kubectl get httproute -A
+                            echo "== RBAC ==" && kubectl get role,rolebinding -n cilium-secrets
+                            echo "== Jenkins (not touched by this pipeline) ==" && kubectl get pod jenkins-0 -n jenkins
+                        '''
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "ArgoCD, monitoring, and Gateway/TLS/RBAC/Routes reconciled. Jenkins was not modified."
+        }
+        failure {
+            echo "Deployment failed — check stage logs. No auto-rollback; re-run after fixing."
+        }
+    }
+}
