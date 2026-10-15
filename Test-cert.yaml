@@ -1,0 +1,56 @@
+pipeline {
+    agent {
+        kubernetes {
+            defaultContainer 'kubectl'
+            yaml """
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: kubectl
+    image: ghcr.io/cessda/jenkins-agent:1.0
+    command: [cat]
+    tty: true
+"""
+        }
+    }
+
+    options {
+        timestamps()
+        disableConcurrentBuilds()
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Deploy Gateway Routing') {
+            steps {
+                container('kubectl') {
+                    withCredentials([file(credentialsId: 'cessda-mgmt-kubeconfig', variable: 'KUBECONFIG')]) {
+                        sh '''
+                            echo "Deploy TLS Certificate"
+                            kubectl apply -f gateway/certificate.yaml
+
+                            echo "Deploy Gateway"
+                            kubectl apply -f gateway/gateway.yaml
+
+                            echo "Deploy HTTPRoute"
+                            kubectl apply -f gateway/httproute.yaml
+                        '''
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        failure {
+            echo "Deploy Gateway Routing stage failed — check stage logs above."
+        }
+    }
+}
