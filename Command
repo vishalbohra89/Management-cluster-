@@ -1,0 +1,2 @@
+kubectl get gateway cessda-gateway -n cessda-mgmt \
+  -o jsonpath='{range .status.listeners[*]}{.name}{" accepted="}{.conditions[?(@.type=="Accepted")].status}{" programmed="}{.conditions[?(@.type=="Programmed")].status}{" attachedRoutes="}{.attachedRoutes}{"\n"}{end}'
