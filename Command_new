@@ -1,0 +1,8 @@
+kubectl get gateway cessda-gateway -n cessda-mgmt -o yaml \
+  > cessda-gateway-backup.yaml
+
+kubectl annotate gateway cessda-gateway -n cessda-mgmt \
+  reconcile-trigger="$(date +%s)" --overwrite
+
+kubectl get gateway cessda-gateway -n cessda-mgmt
+kubectl describe gateway cessda-gateway -n cessda-mgmt
