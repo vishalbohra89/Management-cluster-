@@ -1,0 +1,10 @@
+kubectl get secret cessda-tls -n cessda-mgmt \
+  -o jsonpath='{.data.tls\.crt}' \
+  | base64 -d \
+  | openssl x509 -noout -subject -issuer -dates
+
+
+kubectl annotate certificate cessda-tls -n cessda-mgmt \
+  cert-manager.io/renewal-reason=manual --overwrite
+
+kubectl get certificate cessda-tls -n cessda-mgmt -w
