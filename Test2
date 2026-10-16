@@ -1,0 +1,4 @@
+kubectl -n kube-system logs deployment/cilium-operator \
+  --since=30m --all-pods=true 2>&1 \
+  | grep -Ei 'gateway|address|ipam|error|failed|conflict' \
+  | tail -80
