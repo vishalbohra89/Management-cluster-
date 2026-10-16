@@ -1,0 +1,9 @@
+kubectl get nodes -l component=gateway-api -o wide
+
+kubectl -n cert-manager patch deploy cert-manager --type merge -p '{"spec":{"template":{"spec":{"hostAliases":[{"ip":"<node-ip>","hostnames":["prometheus.mgmt.cessda.eu","alertmanager.mgmt.cessda.eu","grafana.mgmt.cessda.eu","jenkins.mgmt.cessda.eu","argocd.mgmt.cessda.eu"]}]}}}}'
+kubectl -n cert-manager rollout status deploy cert-manager
+
+kubectl -n cessda-mgmt delete certificaterequest cessda-tls-3
+kubectl -n cessda-mgmt get certificaterequest,order,challenge -w
+
+kubectl run curltest --rm -it --restart=Never --image=curlimages/curl -- curl -m 10 -sv http://prometheus.mgmt.cessda.eu/
