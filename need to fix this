@@ -1,0 +1,198 @@
+pipeline {
+    agent {
+        kubernetes {
+            defaultContainer 'kubectl'
+            yaml """
+apiVersion: v1
+kind: Pod
+spec:
+
+  serviceAccountName: jenkins
+
+  imagePullSecrets:
+    - name: ghcr-secret
+
+  containers:
+  - name: kubectl
+    image: ghcr.io/cessda/jenkins-agent:1.0
+    imagePullPolicy: Always
+    command: [cat]
+    tty: true
+"""
+        }
+    }
+
+    options {
+        disableConcurrentBuilds()
+    }
+
+    environment {
+        MANIFEST_DIR = 'cessda-mgmt'
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+        
+               stage('Verify Service Cluster Connection') {
+
+
+            steps {
+
+
+                container('kubectl') {
+
+
+                    withCredentials([
+                        file(
+                            credentialsId:'cessda-mgmt-kubeconfig',
+                            variable:'KUBECONFIG'
+                        )
+                    ]) {
+
+
+                        sh '''
+
+                        echo "===== Kubernetes Context ====="
+
+                        kubectl config current-context
+
+
+                        echo "===== Nodes ====="
+
+                        kubectl get nodes
+
+
+                        '''
+
+                    }
+
+                }
+
+            }
+
+        }
+        stage('Validate: Jenkins') {
+            steps {
+                container('kubectl') {
+                    withKubeConfig(credentialsId: 'cessda-mgmt-kubeconfig') {
+                        sh '''
+                            echo "== Jenkins pod =="
+                            kubectl get pod jenkins-0 -n jenkins -o wide
+                            kubectl get pvc -n jenkins
+                        '''
+                    }
+                }
+            }
+        }
+
+
+        // ---------- Helm-managed apps (ArgoCD, monitoring) ----------
+        // Jenkins is intentionally NOT included in this pipeline.
+
+        stage('Helm repos') {
+            steps {
+                container('kubectl') {
+                    sh '''
+                        helm repo add argo https://argoproj.github.io/argo-helm
+                        helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+                        helm repo update
+                    '''
+                }
+            }
+        }
+
+        stage('ArgoCD (Helm upgrade --install)') {
+            steps {
+                container('kubectl') {
+                    withKubeConfig(credentialsId: 'cessda-mgmt-kubeconfig') {
+                        sh '''
+                            helm upgrade --install argocd argo/argo-cd \
+                                -n argocd --create-namespace \
+                                -f argoCD/httproute.yaml \
+                                --wait --timeout 5m
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Monitoring (Helm upgrade --install)') {
+            steps {
+                container('kubectl') {
+                    withKubeConfig(credentialsId: 'cessda-mgmt-kubeconfig') {
+                        sh '''
+                            helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
+                                -n monitoring --create-namespace \
+                                -f monitoring/httproute.yaml \
+                               --set prometheus-node-exporter.enabled=false \
+                               --wait \
+                               --timeout 10m
+                        '''
+                    }
+                }
+            }
+        }
+
+        // ---------- Gateway / TLS / RBAC / HTTPRoutes (Kustomize) ----------
+
+stage('Deploy Gateway Routing') {
+    steps {
+        container('kubectl') {
+            withCredentials([
+                file(
+                    credentialsId: 'cessda-mgmt-kubeconfig',
+                    variable: 'KUBECONFIG'
+                )
+            ]) {
+                sh '''
+
+
+echo "===== Deploy TLS Certificate ====="
+
+kubectl apply -f gateway/certificate.yaml
+
+
+echo "===== Deploy Gateway ====="
+
+kubectl apply -f gateway/gateway.yaml
+
+
+echo "===== Deploy HTTPRoute ====="
+
+kubectl apply -f gateway/httproute.yaml
+                }
+            }
+        }
+    }
+        stage('Verify') {
+            steps {
+                container('kubectl') {
+                    withKubeConfig(credentialsId: 'cessda-mgmt-kubeconfig') {
+                        sh '''
+                            echo "== ArgoCD ==" && kubectl get pods -n argocd
+                            echo "== Monitoring ==" && kubectl get pods -n monitoring
+                            echo "== Gateway ==" && kubectl get gateway cessda-gateway -n cessda-mgmt
+                            echo "== Certificate ==" && kubectl get certificate cessda-tls -n cessda-mgmt
+                            echo "== HTTPRoutes ==" && kubectl get httproute -A
+                            echo "== RBAC ==" && kubectl get role,rolebinding -n cilium-secrets
+                            echo "== Jenkins (not touched by this pipeline) ==" && kubectl get pod jenkins-0 -n jenkins
+                        '''
+                    }
+                }
+            }
+        }
+    
+
+    post {
+        success {
+            echo "ArgoCD, monitoring, and Gateway/TLS/RBAC/Routes reconciled. Jenkins was not modified."
+        }
+        failure {
+            echo "Deployment failed — check stage logs. No auto-rollback; re-run after fixing."
+        }
+    }
