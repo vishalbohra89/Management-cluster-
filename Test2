@@ -1,4 +1,46 @@
-kubectl -n kube-system logs deployment/cilium-operator \
+kubectl -n cessda-mgmt get svc cilium-gateway-cessda-gateway -o yaml 
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: "2026-07-03T13:49:36Z"
+  labels:
+    gateway.networking.k8s.io/gateway-name: cessda-gateway
+    io.cilium.gateway/owning-gateway: cessda-gateway
+  name: cilium-gateway-cessda-gateway
+  namespace: cessda-mgmt
+  ownerReferences:
+  - apiVersion: gateway.networking.k8s.io/v1
+    controller: true
+    kind: Gateway
+    name: cessda-gateway
+    uid: 66076484-f573-41f1-b894-cdc9597417a9
+  resourceVersion: "48278281"
+  uid: abe53fc0-c6d2-4fae-bed4-e7e0eb332200
+spec:
+  clusterIP: 10.111.123.250
+  clusterIPs:
+  - 10.111.123.250
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: port-80
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  - name: port-443
+    port: 443
+    protocol: TCP
+    targetPort: 443
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}
+vishalbohra@vishal-sin-MacBook-Pro ~ % 
+
+vishalbohra@vishal-sin-MacBook-Pro ~ % kubectl -n kube-system logs deployment/cilium-operator \
   --since=30m --all-pods=true 2>&1 \
   | grep -Ei 'gateway|address|ipam|error|failed|conflict' \
   | tail -80
+vishalbohra@vishal-sin-MacBook-Pro ~ % 
