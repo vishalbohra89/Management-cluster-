@@ -1,5 +1,155 @@
 kubectl annotate gateway cessda-gateway -n cessda-mgmt \
   cilium.io/lb-ipam-ips-
-
-kubectl patch gateway cessda-gateway -n cessda-mgmt \
+gateway.gateway.networking.k8s.io/cessda-gateway annotated
+vishalbohra@vishal-sin-MacBook-Pro ~ % 
+vishalbohra@vishal-sin-MacBook-Pro ~ % kubectl patch gateway cessda-gateway -n cessda-mgmt \
   --type=merge -p '{"spec":{"addresses":null}}'
+gateway.gateway.networking.k8s.io/cessda-gateway patched (no change)
+vishalbohra@vishal-sin-MacBook-Pro ~ % 
+vishalbohra@vishal-sin-MacBook-Pro ~ % kubectl get gateway cessda-gateway -n cessda-mgmt -o wide 
+NAME             CLASS    ADDRESS       PROGRAMMED   AGE
+cessda-gateway   cilium   10.66.100.0   False        104d
+vishalbohra@vishal-sin-MacBook-Pro ~ % 
+vishalbohra@vishal-sin-MacBook-Pro ~ % kubctl decsribe gateway cessda-gateway -n cessda-mgmt 
+zsh: command not found: kubctl
+vishalbohra@vishal-sin-MacBook-Pro ~ % kubectl decsribe gateway cessda-gateway -n cessda-mgmt    
+error: unknown command "decsribe" for "kubectl"
+
+Did you mean this?
+	describe
+vishalbohra@vishal-sin-MacBook-Pro ~ % kubectl describe gateway cessda-gateway -n cessda-mgmt 
+Name:         cessda-gateway
+Namespace:    cessda-mgmt
+Labels:       <none>
+Annotations:  reconcile-trigger: 1792077790
+API Version:  gateway.networking.k8s.io/v1
+Kind:         Gateway
+Metadata:
+  Creation Timestamp:  2026-07-03T13:49:36Z
+  Generation:          1
+  Resource Version:    48492831
+  UID:                 66076484-f573-41f1-b894-cdc9597417a9
+Spec:
+  Gateway Class Name:  cilium
+  Listeners:
+    Allowed Routes:
+      Namespaces:
+        From:  All
+    Name:      http
+    Port:      80
+    Protocol:  HTTP
+    Allowed Routes:
+      Namespaces:
+        From:  All
+    Name:      https
+    Port:      443
+    Protocol:  HTTPS
+    Tls:
+      Certificate Refs:
+        Group:      
+        Kind:       Secret
+        Name:       cessda-tls
+        Namespace:  cessda-mgmt
+      Mode:         Terminate
+    Allowed Routes:
+      Namespaces:
+        From:  All
+    Name:      graylog-tcp
+    Port:      12201
+    Protocol:  TCP
+Status:
+  Addresses:
+    Type:   IPAddress
+    Value:  10.66.100.0
+  Conditions:
+    Last Transition Time:  2026-07-03T13:49:36Z
+    Message:               Gateway successfully scheduled
+    Observed Generation:   1
+    Reason:                Accepted
+    Status:                True
+    Type:                  Accepted
+    Last Transition Time:  2026-10-15T17:08:58Z
+    Message:               Gateway waiting for address
+    Observed Generation:   1
+    Reason:                AddressNotAssigned
+    Status:                False
+    Type:                  Programmed
+  Listeners:
+    Attached Routes:  3
+    Conditions:
+      Last Transition Time:  2026-10-15T17:08:58Z
+      Message:               Resolved Refs
+      Observed Generation:   1
+      Reason:                ResolvedRefs
+      Status:                True
+      Type:                  ResolvedRefs
+      Last Transition Time:  2026-10-15T17:08:58Z
+      Message:               Listener Accepted
+      Observed Generation:   1
+      Reason:                Accepted
+      Status:                True
+      Type:                  Accepted
+      Last Transition Time:  2026-10-15T17:08:58Z
+      Message:               Address not ready yet
+      Observed Generation:   1
+      Reason:                Pending
+      Status:                False
+      Type:                  Programmed
+    Name:                    http
+    Supported Kinds:
+      Group:          gateway.networking.k8s.io
+      Kind:           HTTPRoute
+      Group:          gateway.networking.k8s.io
+      Kind:           GRPCRoute
+    Attached Routes:  7
+    Conditions:
+      Last Transition Time:  2026-10-15T17:08:58Z
+      Message:               Resolved Refs
+      Observed Generation:   1
+      Reason:                ResolvedRefs
+      Status:                True
+      Type:                  ResolvedRefs
+      Last Transition Time:  2026-10-15T17:08:58Z
+      Message:               Listener Accepted
+      Observed Generation:   1
+      Reason:                Accepted
+      Status:                True
+      Type:                  Accepted
+      Last Transition Time:  2026-10-15T17:08:58Z
+      Message:               Address not ready yet
+      Observed Generation:   1
+      Reason:                Pending
+      Status:                False
+      Type:                  Programmed
+    Name:                    https
+    Supported Kinds:
+      Group:          gateway.networking.k8s.io
+      Kind:           HTTPRoute
+      Group:          gateway.networking.k8s.io
+      Kind:           GRPCRoute
+    Attached Routes:  3
+    Conditions:
+      Last Transition Time:  2026-10-15T17:08:58Z
+      Message:               Resolved Refs
+      Observed Generation:   1
+      Reason:                ResolvedRefs
+      Status:                True
+      Type:                  ResolvedRefs
+      Last Transition Time:  2026-10-15T17:08:58Z
+      Message:               Listener Accepted
+      Observed Generation:   1
+      Reason:                Accepted
+      Status:                True
+      Type:                  Accepted
+      Last Transition Time:  2026-10-15T17:08:58Z
+      Message:               Address not ready yet
+      Observed Generation:   1
+      Reason:                Pending
+      Status:                False
+      Type:                  Programmed
+    Name:                    graylog-tcp
+    Supported Kinds:
+      Group:  gateway.networking.k8s.io
+      Kind:   TCPRoute
+Events:       <none>
+vishalbohra@vishal-sin-MacBook-Pro ~ % 
