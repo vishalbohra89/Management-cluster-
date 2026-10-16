@@ -6,3 +6,35 @@ kubectl -n kube-system get pods -l k8s-app=cilium \
 
 helm list -A
 
+
+helm list -A
+NAME                 	NAMESPACE 	REVISION	UPDATED                                	STATUS  	CHART                       	APP VERSION
+argocd               	argocd    	6       	2026-10-15 11:49:09.90049696 +0000 UTC 	deployed	argo-cd-10.10.5             	v3.5.5     
+jenkins              	jenkins   	2       	2026-07-03 10:27:34.511859 +0200 CEST  	deployed	jenkins-5.9.22              	2.555.2    
+kube-prometheus-stack	monitoring	4       	2026-10-15 11:49:23.871299621 +0000 UTC	deployed	kube-prometheus-stack-92.8.0	v0.94.1    
+vishalbohra@vishal-sin-MacBook-Pro ~ % 
+vishalbohra@vishal-sin-MacBook-Pro ~ % kubectl get nodes -o wide 
+NAME                                                            STATUS   ROLES           AGE    VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE          KERNEL-VERSION   CONTAINER-RUNTIME
+f6571fa9-5334-4f2c-a726-6ce446ac9a5a-2ptx7-worker-hs6fq-8dj7t   Ready    worker          135d   v1.35.4   10.66.0.80    <none>        Talos (v1.12.7)   6.18.24-talos    containerd://2.1.7
+f6571fa9-5334-4f2c-a726-6ce446ac9a5a-2ptx7-worker-hs6fq-ps9lz   Ready    worker          135d   v1.35.4   10.66.2.167   <none>        Talos (v1.12.7)   6.18.24-talos    containerd://2.1.7
+f6571fa9-5334-4f2c-a726-6ce446ac9a5a-2ptx7-worker-hs6fq-qdl5t   Ready    worker          135d   v1.35.4   10.66.2.132   <none>        Talos (v1.12.7)   6.18.24-talos    containerd://2.1.7
+f6571fa9-5334-4f2c-a726-6ce446ac9a5a-control-plane-4sclv        Ready    control-plane   135d   v1.35.4   10.66.1.151   <none>        Talos (v1.12.7)   6.18.24-talos    containerd://2.1.7
+f6571fa9-5334-4f2c-a726-6ce446ac9a5a-control-plane-rb6sn        Ready    control-plane   135d   v1.35.4   10.66.1.123   <none>        Talos (v1.12.7)   6.18.24-talos    containerd://2.1.7
+f6571fa9-5334-4f2c-a726-6ce446ac9a5a-control-plane-vbq5g        Ready    control-plane   135d   v1.35.4   10.66.3.227   <none>        Talos (v1.12.7)   6.18.24-talos    containerd://2.1.7
+vishalbohra@vishal-sin-MacBook-Pro ~ % 
+vishalbohra@vishal-sin-MacBook-Pro ~ % 
+vishalbohra@vishal-sin-MacBook-Pro ~ % 
+vishalbohra@vishal-sin-MacBook-Pro ~ % kubectl get gateway cessda-gateway -n cessda-mgmt \
+  -o jsonpath='{.spec.addresses}{"\n"}{.status.addresses}{"\n"}{.status.conditions}{"\n"}'
+
+[{"type":"IPAddress","value":"10.66.100.0"}]
+[{"lastTransitionTime":"2026-07-03T13:49:36Z","message":"Gateway successfully scheduled","observedGeneration":1,"reason":"Accepted","status":"True","type":"Accepted"},{"lastTransitionTime":"2026-10-15T17:08:58Z","message":"Gateway waiting for address","observedGeneration":1,"reason":"AddressNotAssigned","status":"False","type":"Programmed"}]
+vishalbohra@vishal-sin-MacBook-Pro ~ % 
+vishalbohra@vishal-sin-MacBook-Pro ~ % kubectl -n kube-system get pods -l k8s-app=cilium \
+  -o jsonpath='{range .items[*]}{.metadata.name}{"  "}{.spec.containers[0].image}{"\n"}{end}'
+cilium-2hn2l  quay.io/cilium/cilium:v1.19.1@sha256:41f1f74a0000de8656f1de4088ea00c8f2d49d6edea579034c73c5fd5fe01792
+cilium-8rw5v  quay.io/cilium/cilium:v1.19.1@sha256:41f1f74a0000de8656f1de4088ea00c8f2d49d6edea579034c73c5fd5fe01792
+cilium-chtjz  quay.io/cilium/cilium:v1.19.1@sha256:41f1f74a0000de8656f1de4088ea00c8f2d49d6edea579034c73c5fd5fe01792
+cilium-mtrx9  quay.io/cilium/cilium:v1.19.1@sha256:41f1f74a0000de8656f1de4088ea00c8f2d49d6edea579034c73c5fd5fe01792
+cilium-n9j54  quay.io/cilium/cilium:v1.19.1@sha256:41f1f74a0000de8656f1de4088ea00c8f2d49d6edea579034c73c5fd5fe01792
+cilium-xdjp6  quay.io/cilium/cilium:v1.19.1@sha256:41f1f74a0000de8656f1de4088ea00c8f2d49d6edea579034c73c5fd5fe01792
