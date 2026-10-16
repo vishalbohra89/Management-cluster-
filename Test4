@@ -8,3 +8,132 @@ kubectl annotate certificate cessda-tls -n cessda-mgmt \
   cert-manager.io/renewal-reason=manual --overwrite
 
 kubectl get certificate cessda-tls -n cessda-mgmt -w
+
+
+kubectl -n kube-system get svc cessda-gateway-static-ports -o wide
+NAME                          TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)                      AGE   SELECTOR
+cessda-gateway-static-ports   NodePort   10.111.23.29   <none>        80:32664/TCP,443:30963/TCP   91d   k8s-app=cilium-envoy
+vishalbohra@vishal-sin-MacBook-Pro cessda-mgmt %                                                                   
+vishalbohra@vishal-sin-MacBook-Pro cessda-mgmt % 
+vishalbohra@vishal-sin-MacBook-Pro cessda-mgmt % kubectl get svc -A | grep -E '32664|30963'                        
+kube-system                     cessda-gateway-static-ports                      NodePort    10.111.23.29     <none>        80:32664/TCP,443:30963/TCP     91d
+vishalbohra@vishal-sin-MacBook-Pro cessda-mgmt % 
+vishalbohra@vishal-sin-MacBook-Pro cessda-mgmt % kubectl get gateway,httproute -A
+NAMESPACE     NAME                                               CLASS    ADDRESS       PROGRAMMED   AGE
+cessda-mgmt   gateway.gateway.networking.k8s.io/cessda-gateway   cilium   10.66.100.0   False        104d
+
+NAMESPACE     NAME                                                            HOSTNAMES                         AGE
+argocd        httproute.gateway.networking.k8s.io/argocd                      ["argocd.mgmt.cessda.eu"]         104d
+cessda-mgmt   httproute.gateway.networking.k8s.io/argocd                      ["argocd.mgmt.cessda.eu"]         16h
+cessda-mgmt   httproute.gateway.networking.k8s.io/cm-acme-http-solver-68svz   ["prometheus.mgmt.cessda.eu"]     33m
+cessda-mgmt   httproute.gateway.networking.k8s.io/cm-acme-http-solver-dhvhd   ["grafana.mgmt.cessda.eu"]        33m
+cessda-mgmt   httproute.gateway.networking.k8s.io/cm-acme-http-solver-fm52f   ["alertmanager.mgmt.cessda.eu"]   33m
+cessda-mgmt   httproute.gateway.networking.k8s.io/cm-acme-http-solver-qjcgh   ["jenkins.mgmt.cessda.eu"]        33m
+jenkins       httproute.gateway.networking.k8s.io/echo-test                   ["echo.mgmt.cessda.eu"]           105d
+jenkins       httproute.gateway.networking.k8s.io/jenkins                     ["jenkins.mgmt.cessda.eu"]        133d
+monitoring    httproute.gateway.networking.k8s.io/alertmanager                ["alertmanager.mgmt.cessda.eu"]   133d
+monitoring    httproute.gateway.networking.k8s.io/grafana                     ["grafana.mgmt.cessda.eu"]        133d
+monitoring    httproute.gateway.networking.k8s.io/prometheus                  ["prometheus.mgmt.cessda.eu"]     133d
+vishalbohra@vishal-sin-MacBook-Pro cessda-mgmt % 
+vishalbohra@vishal-sin-MacBook-Pro cessda-mgmt % kubectl get httproute -A -o yaml |grep -B2 -A12 -i "argocd" | head -60
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"gateway.networking.k8s.io/v1","kind":"HTTPRoute","metadata":{"annotations":{},"name":"argocd","namespace":"argocd"},"spec":{"hostnames":["argocd.mgmt.cessda.eu"],"parentRefs":[{"name":"cessda-gateway","namespace":"cessda-mgmt","sectionName":"https"}],"rules":[{"backendRefs":[{"name":"argocd-server","namespace":"argocd","port":80}],"matches":[{"path":{"type":"PathPrefix","value":"/"}}]}]}}
+    creationTimestamp: "2026-07-03T13:24:54Z"
+    generation: 6
+    name: argocd
+    namespace: argocd
+    resourceVersion: "12067262"
+    uid: 4e49ad16-bb7a-493e-98b0-ad072e86e56c
+  spec:
+    hostnames:
+    - argocd.mgmt.cessda.eu
+    parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: cessda-gateway
+      namespace: cessda-mgmt
+      sectionName: https
+    rules:
+    - backendRefs:
+      - group: ""
+        kind: Service
+        name: argocd-server
+        namespace: argocd
+        port: 80
+        weight: 1
+      matches:
+      - path:
+          type: PathPrefix
+          value: /
+  status:
+    parents:
+    - conditions:
+      - lastTransitionTime: "2026-07-03T13:28:06Z"
+        message: Accepted HTTPRoute
+        observedGeneration: 2
+--
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"gateway.networking.k8s.io/v1","kind":"HTTPRoute","metadata":{"annotations":{},"name":"argocd","namespace":"cessda-mgmt"},"spec":{"hostnames":["argocd.mgmt.cessda.eu"],"parentRefs":[{"name":"cessda-gateway","namespace":"cessda-mgmt","sectionName":"https"}],"rules":[{"backendRefs":[{"name":"argocd-server","port":80}],"matches":[{"path":{"type":"PathPrefix","value":"/"}}]}]}}
+    creationTimestamp: "2026-10-15T17:03:14Z"
+    generation: 1
+    name: argocd
+    namespace: cessda-mgmt
+    resourceVersion: "48276495"
+    uid: dca28428-c29c-4a73-a988-85e21bfd7298
+  spec:
+    hostnames:
+    - argocd.mgmt.cessda.eu
+    parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: cessda-gateway
+      namespace: cessda-mgmt
+      sectionName: https
+    rules:
+    - backendRefs:
+      - group: ""
+        kind: Service
+        name: argocd-server
+vishalbohra@vishal-sin-MacBook-Pro cessda-mgmt % 
+vishalbohra@vishal-sin-MacBook-Pro cessda-mgmt % 
+vishalbohra@vishal-sin-MacBook-Pro cessda-mgmt % 
+vishalbohra@vishal-sin-MacBook-Pro cessda-mgmt % kubectl -n argocd get pods,svc 
+NAME                                                   READY   STATUS    RESTARTS   AGE
+pod/argocd-application-controller-0                    1/1     Running   0          17h
+pod/argocd-applicationset-controller-cc69755ff-5sjqs   1/1     Running   0          17h
+pod/argocd-dex-server-8cd7445f9-t6tc7                  1/1     Running   0          17h
+pod/argocd-notifications-controller-689dd59764-x4ck6   1/1     Running   0          17h
+pod/argocd-redis-778447cfc9-98lc4                      1/1     Running   0          17h
+pod/argocd-repo-server-64cf9ffc66-2g5pw                1/1     Running   0          17h
+pod/argocd-server-5f77b4475-lh7jm                      1/1     Running   0          17h
+
+NAME                                       TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)             AGE
+service/argocd-applicationset-controller   ClusterIP   10.109.14.174    <none>        7000/TCP            133d
+service/argocd-dex-server                  ClusterIP   10.100.107.246   <none>        5556/TCP,5557/TCP   133d
+service/argocd-redis                       ClusterIP   10.108.39.187    <none>        6379/TCP            133d
+service/argocd-repo-server                 ClusterIP   10.106.179.101   <none>        8081/TCP            133d
+service/argocd-server                      ClusterIP   10.104.133.233   <none>        80/TCP,443/TCP      133d
+vishalbohra@vishal-sin-MacBook-Pro cessda-mgmt % 
+vishalbohra@vishal-sin-MacBook-Pro cessda-mgmt % 
+vishalbohra@vishal-sin-MacBook-Pro cessda-mgmt % kubectl -n argocd get cm argocd-cmd-params-cm -o yaml | grep -i insecure 
+vishalbohra@vishal-sin-MacBook-Pro cessda-mgmt % 
+vishalbohra@vishal-sin-MacBook-Pro cessda-mgmt % kubectl -n kube-system get pods -l k8s-app=cilium
+NAME           READY   STATUS    RESTARTS   AGE
+cilium-2hn2l   1/1     Running   0          16h
+cilium-8rw5v   1/1     Running   0          16h
+cilium-chtjz   1/1     Running   0          16h
+cilium-mtrx9   1/1     Running   0          16h
+cilium-n9j54   1/1     Running   0          16h
+cilium-xdjp6   1/1     Running   0          16h
+vishalbohra@vishal-sin-MacBook-Pro cessda-mgmt % 
+vishalbohra@vishal-sin-MacBook-Pro cessda-mgmt % curl -kv https://192.121.132.89:32664 -H "Host: argocd.mgmt.cessda.eu" 2>&1 | head -30
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 192.121.132.89:32664...
+* connect to 192.121.132.89 port 32664 from 10.0.0.7 port 63309 failed: Connection refused
+* Failed to connect to 192.121.132.89 port 32664 after 20 ms: Couldn't connect to server
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+* Closing connection
+curl: (7) Failed to connect to 192.121.132.89 port 32664 after 20 ms: Couldn't connect to server
