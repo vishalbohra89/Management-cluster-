@@ -1,0 +1,1 @@
+kubectl run curltest --rm -it --restart=Never --image=curlimages/curl --command -- sh -c 'for i in 1 2 3 4 5; do curl -m 8 -s -o /dev/null -w "%{http_code}\n" http://prometheus.mgmt.cessda.eu/; done'
