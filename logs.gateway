@@ -1,0 +1,216 @@
+kubectl get pods -n kube-system |grep envoy |wc -l
+       6
+vishalbohra@vishal-sin-MacBook-Pro argoCD % kubectl get pods -n kube-system |grep envoy       
+cilium-envoy-4k6zg                                                                 1/1     Running   0              12h
+cilium-envoy-782xx                                                                 1/1     Running   0              12h
+cilium-envoy-7kwnm                                                                 1/1     Running   0              12h
+cilium-envoy-9l6dx                                                                 1/1     Running   0              12h
+cilium-envoy-cf4tq                                                                 1/1     Running   0              12h
+cilium-envoy-p26cb                                                                 1/1     Running   0              12h
+vishalbohra@vishal-sin-MacBook-Pro argoCD % 
+vishalbohra@vishal-sin-MacBook-Pro argoCD % kubct get svc -A|grep loadbalancer
+zsh: command not found: kubct
+vishalbohra@vishal-sin-MacBook-Pro argoCD % kubctl get svc -A|grep loadbalancer
+zsh: command not found: kubctl
+vishalbohra@vishal-sin-MacBook-Pro argoCD % kubectl get svc -A|grep loadbalancer
+vishalbohra@vishal-sin-MacBook-Pro argoCD % 
+vishalbohra@vishal-sin-MacBook-Pro argoCD % kubectl get svc -n cessda-mgmt cilium-gateway=cessda-gateway -o wide 
+Error from server (NotFound): services "cilium-gateway=cessda-gateway" not found
+vishalbohra@vishal-sin-MacBook-Pro argoCD % kubectl get svc -n cessda-mgmt cilium-gateway-cessda-gateway -o wide 
+NAME                            TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)          AGE    SELECTOR
+cilium-gateway-cessda-gateway   ClusterIP   10.111.123.250   <none>        80/TCP,443/TCP   104d   <none>
+vishalbohra@vishal-sin-MacBook-Pro argoCD % 
+vishalbohra@vishal-sin-MacBook-Pro argoCD % kubectl get gateway -n cessda-mgmt-cessda-gateway -o yaml 
+apiVersion: v1
+items: []
+kind: List
+metadata:
+  resourceVersion: ""
+vishalbohra@vishal-sin-MacBook-Pro argoCD % 
+vishalbohra@vishal-sin-MacBook-Pro argoCD % kubectl get svc -n argocd argocd-server -o wide 
+NAME            TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)          AGE    SELECTOR
+argocd-server   ClusterIP   10.104.133.233   <none>        80/TCP,443/TCP   133d   app.kubernetes.io/instance=argocd,app.kubernetes.io/name=argocd-server
+vishalbohra@vishal-sin-MacBook-Pro argoCD % 
+vishalbohra@vishal-sin-MacBook-Pro argoCD % kubectl get gateway -n cessda-mgmt cessda-gateway -o yaml 
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  annotations:
+    cilium.io/lb-ipam-ips: 10.66.100.1
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"gateway.networking.k8s.io/v1","kind":"Gateway","metadata":{"annotations":{"cilium.io/lb-ipam-ips":"10.66.100.1"},"name":"cessda-gateway","namespace":"cessda-mgmt"},"spec":{"gatewayClassName":"cilium","listeners":[{"allowedRoutes":{"namespaces":{"from":"All"}},"name":"http","port":80,"protocol":"HTTP"},{"allowedRoutes":{"namespaces":{"from":"All"}},"name":"https","port":443,"protocol":"HTTPS","tls":{"certificateRefs":[{"group":"","kind":"Secret","name":"cessda-tls","namespace":"cessda-mgmt"}],"mode":"Terminate"}},{"allowedRoutes":{"namespaces":{"from":"All"}},"name":"graylog-tcp","port":12201,"protocol":"TCP"}]}}
+    reconcile-trigger: "1792077790"
+  creationTimestamp: "2026-07-03T13:49:36Z"
+  generation: 1
+  name: cessda-gateway
+  namespace: cessda-mgmt
+  resourceVersion: "48278283"
+  uid: 66076484-f573-41f1-b894-cdc9597417a9
+spec:
+  gatewayClassName: cilium
+  listeners:
+  - allowedRoutes:
+      namespaces:
+        from: All
+    name: http
+    port: 80
+    protocol: HTTP
+  - allowedRoutes:
+      namespaces:
+        from: All
+    name: https
+    port: 443
+    protocol: HTTPS
+    tls:
+      certificateRefs:
+      - group: ""
+        kind: Secret
+        name: cessda-tls
+        namespace: cessda-mgmt
+      mode: Terminate
+  - allowedRoutes:
+      namespaces:
+        from: All
+    name: graylog-tcp
+    port: 12201
+    protocol: TCP
+status:
+  addresses:
+  - type: IPAddress
+    value: 10.66.100.0
+  conditions:
+  - lastTransitionTime: "2026-07-03T13:49:36Z"
+    message: Gateway successfully scheduled
+    observedGeneration: 1
+    reason: Accepted
+    status: "True"
+    type: Accepted
+  - lastTransitionTime: "2026-10-15T17:08:58Z"
+    message: Gateway waiting for address
+    observedGeneration: 1
+    reason: AddressNotAssigned
+    status: "False"
+    type: Programmed
+  listeners:
+  - attachedRoutes: 3
+    conditions:
+    - lastTransitionTime: "2026-10-15T17:08:58Z"
+      message: Resolved Refs
+      observedGeneration: 1
+      reason: ResolvedRefs
+      status: "True"
+      type: ResolvedRefs
+    - lastTransitionTime: "2026-10-15T17:08:58Z"
+      message: Listener Accepted
+      observedGeneration: 1
+      reason: Accepted
+      status: "True"
+      type: Accepted
+    - lastTransitionTime: "2026-10-15T17:08:58Z"
+      message: Address not ready yet
+      observedGeneration: 1
+      reason: Pending
+      status: "False"
+      type: Programmed
+    name: http
+    supportedKinds:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+    - group: gateway.networking.k8s.io
+      kind: GRPCRoute
+  - attachedRoutes: 7
+    conditions:
+    - lastTransitionTime: "2026-10-15T17:08:58Z"
+      message: Resolved Refs
+      observedGeneration: 1
+      reason: ResolvedRefs
+      status: "True"
+      type: ResolvedRefs
+    - lastTransitionTime: "2026-10-15T17:08:58Z"
+      message: Listener Accepted
+      observedGeneration: 1
+      reason: Accepted
+      status: "True"
+      type: Accepted
+    - lastTransitionTime: "2026-10-15T17:08:58Z"
+      message: Address not ready yet
+      observedGeneration: 1
+      reason: Pending
+      status: "False"
+      type: Programmed
+    name: https
+    supportedKinds:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+    - group: gateway.networking.k8s.io
+      kind: GRPCRoute
+  - attachedRoutes: 3
+    conditions:
+    - lastTransitionTime: "2026-10-15T17:08:58Z"
+      message: Resolved Refs
+      observedGeneration: 1
+      reason: ResolvedRefs
+      status: "True"
+      type: ResolvedRefs
+    - lastTransitionTime: "2026-10-15T17:08:58Z"
+      message: Listener Accepted
+      observedGeneration: 1
+      reason: Accepted
+      status: "True"
+      type: Accepted
+    - lastTransitionTime: "2026-10-15T17:08:58Z"
+      message: Address not ready yet
+      observedGeneration: 1
+      reason: Pending
+      status: "False"
+      type: Programmed
+    name: graylog-tcp
+    supportedKinds:
+    - group: gateway.networking.k8s.io
+      kind: TCPRoute
+vishalbohra@vishal-sin-MacBook-Pro argoCD % 
+vishalbohra@vishal-sin-MacBook-Pro argoCD % kubectl get svc  -n cessda-mgmt cilium-gateway-cessda-gateway -o yaml 
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: "2026-07-03T13:49:36Z"
+  labels:
+    gateway.networking.k8s.io/gateway-name: cessda-gateway
+    io.cilium.gateway/owning-gateway: cessda-gateway
+  name: cilium-gateway-cessda-gateway
+  namespace: cessda-mgmt
+  ownerReferences:
+  - apiVersion: gateway.networking.k8s.io/v1
+    controller: true
+    kind: Gateway
+    name: cessda-gateway
+    uid: 66076484-f573-41f1-b894-cdc9597417a9
+  resourceVersion: "48278281"
+  uid: abe53fc0-c6d2-4fae-bed4-e7e0eb332200
+spec:
+  clusterIP: 10.111.123.250
+  clusterIPs:
+  - 10.111.123.250
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: port-80
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  - name: port-443
+    port: 443
+    protocol: TCP
+    targetPort: 443
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}
+vishalbohra@vishal-sin-MacBook-Pro argoCD % 
+vishalbohra@vishal-sin-MacBook-Pro argoCD % kubectl get cilium2announcementpolicy -A -o yaml 
+error: the server doesn't have a resource type "cilium2announcementpolicy"
+vishalbohra@vishal-sin-MacBook-Pro argoCD % kubectl get cilium12announcementpolicy -A -o yaml 
+error: the server doesn't have a resource type "cilium12announcementpolicy"
+vishalbohra@vishal-sin-MacBook-Pro argoCD % cd 
