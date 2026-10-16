@@ -1,0 +1,7 @@
+kubectl -n kube-system get ds cilium -o yaml | grep -C 4 -E 'gateway-api-hostnetwork|enable-gateway-api'
+
+kubectl -n kube-system get deployment cilium-operator -o yaml | grep -C 4 -E 'gateway-api-hostnetwork|enable-gateway-api'
+
+kubectl -n kube-system get configmap cilium-config \
+  -o jsonpath='{.data.enable-lb-ipam}{"\n"}{.data.gateway-api-hostnetwork-enabled}{"\n"}'
+
