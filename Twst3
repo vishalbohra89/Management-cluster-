@@ -1,0 +1,5 @@
+kubectl annotate gateway cessda-gateway -n cessda-mgmt \
+  cilium.io/lb-ipam-ips-
+
+kubectl patch gateway cessda-gateway -n cessda-mgmt \
+  --type=merge -p '{"spec":{"addresses":null}}'
