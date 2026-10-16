@@ -1,0 +1,6 @@
+kubectl get nodes -l component=gateway-api -o wide
+kubectl run curltest --rm -it --restart=Never --image=curlimages/curl --command -- sh -c 'for i in 1 2 3 4 5 6; do curl -m 8 -s -o /dev/null -w "%{http_code}\n" --resolve prometheus.mgmt.cessda.eu:80:10.66.x.x http://prometheus.mgmt.cessda.eu/; done'
+kubectl -n cert-manager patch deploy cert-manager --type merge -p '{"spec":{"template":{"spec":{"hostAliases":[{"ip":"10.66.x.x","hostnames":["prometheus.mgmt.cessda.eu","alertmanager.mgmt.cessda.eu","grafana.mgmt.cessda.eu","jenkins.mgmt.cessda.eu","argocd.mgmt.cessda.eu"]}]}}}}'
+kubectl -n cert-manager rollout status deploy cert-manager
+cmctl renew cessda-tls -n cessda-mgmt
+for i in 1 2 3 4 5 6 7 8; do curl -m 8 -s -o /dev/null -w "%{http_code}\n" http://prometheus.mgmt.cessda.eu/; done
