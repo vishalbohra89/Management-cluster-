@@ -1,0 +1,5 @@
+for i in 1 2 3 4 5; do curl -v --max-time 8 http://argocd.mgmt.cessda.eu/.well-known/acme-challenge/test 2>&1 | grep -E "Trying|Connected|timed out"; done
+kubectl get endpoints cessda-gateway-static-ports -n kube-system -o wide
+kubectl get nodes -o wide
+kubectl get pods -n kube-system -l k8s-app=cilium -o wide
+kubectl exec -n kube-system <any-cilium-pod> -- cilium status --verbose 2>&1 | grep -i -A3 "nodeport\|conntrack"
