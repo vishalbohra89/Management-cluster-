@@ -1,0 +1,4 @@
+kubectl delete certificate argocd-tls prometheus-tls -n cessda-mgmt
+kubectl apply -f certificates-split.yaml
+sleep 20
+kubectl get pods -n cessda-mgmt -l acme.cert-manager.io/http01-solver=true -o custom-columns=NAME:.metadata.name,NODE:.spec.nodeName,DOMAIN:.spec.containers[0].args[3]
