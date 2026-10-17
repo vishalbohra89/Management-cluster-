@@ -1,0 +1,130 @@
+certificates-splits.yaml
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: argocd-tls
+  namespace: cessda-mgmt
+spec:
+  secretName: argocd-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+  - argocd.mgmt.cessda.eu
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: grafana-tls
+  namespace: cessda-mgmt
+spec:
+  secretName: grafana-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+  - grafana.mgmt.cessda.eu
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: prometheus-tls
+  namespace: cessda-mgmt
+spec:
+  secretName: prometheus-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+  - prometheus.mgmt.cessda.eu
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: alertmanager-tls
+  namespace: cessda-mgmt
+spec:
+  secretName: alertmanager-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+  - alertmanager.mgmt.cessda.eu
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: jenkins-tls
+  namespace: cessda-mgmt
+spec:
+  secretName: jenkins-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+  - jenkins.mgmt.cessda.eu
+
+gateway.yaml 
+
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: cessda-gateway
+  namespace: cessda-mgmt
+spec:
+  gatewayClassName: cilium
+  listeners:
+  - name: http
+    port: 80
+    protocol: HTTP
+    allowedRoutes:
+      namespaces:
+        from: All
+  - name: https
+    port: 443
+    protocol: HTTPS
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - group: ""
+        kind: Secret
+        name: argocd-tls
+        namespace: cessda-mgmt
+      - group: ""
+        kind: Secret
+        name: grafana-tls
+        namespace: cessda-mgmt
+      - group: ""
+        kind: Secret
+        name: prometheus-tls
+        namespace: cessda-mgmt
+      - group: ""
+        kind: Secret
+        name: alertmanager-tls
+        namespace: cessda-mgmt
+      - group: ""
+        kind: Secret
+        name: jenkins-tls
+        namespace: cessda-mgmt
+    allowedRoutes:
+      namespaces:
+        from: All
+  - name: graylog-tcp
+    port: 12201
+    protocol: TCP
+    allowedRoutes:
+      namespaces:
+        from: All
+
+# 1. Remove the old combined cert and its request/order history entirely
+kubectl delete certificate cessda-tls -n cessda-mgmt
+kubectl delete secret cessda-tls -n cessda-mgmt --ignore-not-found
+
+# 2. Create the 5 new certificates — they'll each start their own independent issuance
+kubectl apply -f certificates-split.yaml
+
+# 3. Watch them — this time each domain gets its own Order/Challenge, no shared route contention
+kubectl get challenge -n cessda-mgmt -w
+
+
