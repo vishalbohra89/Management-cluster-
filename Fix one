@@ -1,0 +1,5 @@
+kubectl get pods -n kube-system -l k8s-app=cilium -o custom-columns=NAME:.metadata.name,NODE:.spec.nodeName
+for pod in <paste the 6 real names here>; do
+  echo "== $pod =="
+  kubectl exec -n kube-system $pod -- cilium service list | grep -E "32664|30963"
+done
