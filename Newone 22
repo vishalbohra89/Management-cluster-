@@ -1,0 +1,4 @@
+kubectl get pods -n cessda-mgmt -l acme.cert-manager.io/http01-solver=true -o wide
+kubectl get challenge -n cessda-mgmt
+kubectl get pods -n cessda-mgmt -l acme.cert-manager.io/http01-solver=true -o jsonpath='{range .items[*]}{.metadata.name}{"  "}{.spec.nodeName}{"  "}{.metadata.ownerReferences[0].name}{"\n"}{end}'
+noglob kubectl get pods -n cessda-mgmt -l acme.cert-manager.io/http01-solver=true -o jsonpath='{range .items[*]}{.metadata.name}{"  "}{.spec.nodeName}{"  "}{.metadata.ownerReferences[0].name}{"\n"}{end}'
