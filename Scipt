@@ -1,0 +1,4 @@
+for pod in cilium-2hn21 cilium-8rw5v cilium-chtjz cilium-mtrx9 cilium-n9j54 cilium-dipo; do
+  echo "== $pod =="
+  kubectl exec -n kube-system $pod -- cilium status | grep -E "Cilium:|Controllers:"
+done
